@@ -13,11 +13,16 @@ class ChessEnv:
         super(ChessEnv, self).__init__()
         # create board yay
         self.board = chess.Board()
+        # add stockfish engine
+        self.engine = chess.engine.SimpleEngine.popen_uci("stockfish/stockfish-ubuntu-x86-64-avx2")
+        # who is winning
+        self.black_advantage = 0
+        self.white_advantage = 0
         # observation space is the board
         self.observation_space = spaces.Box(low=0, high=1, shape=(8, 8, 6), dtype=np.uint8)
-    
         # action space 
-        self.action_space = spaces.Discrete(len(list(self.board.legal_moves)))
+        self.num_actions = len(list(self.board.legal_moves))
+
 
     def reset(self):
         self.board.reset()
@@ -29,7 +34,7 @@ class ChessEnv:
         for square in chess.SQUARES:
             piece = self.board.piece_at(square)
             if piece is not None:
-                observation[chess.square_rank(square)][chess.square_file(square)][piece.piece_type - 1] = piece.color
+                observation[chess.square_rank(square)][chess.square_file(square)][piece.piece_type - 1] = int(piece.color)
         return observation
     
     def step(self, action):
@@ -52,14 +57,34 @@ class ChessEnv:
         return observation, reward, done, info
     
     def _calculate_reward(self):
+            # turn is true = white advantage is positive
+            # turn is false = black advantage is negative * -1
+        analises = self.engine.analyse(self.board, chess.engine.Limit(time=0.001))
+        rel_score = analises['score'].relative.score()
+        reward = 0
+        if rel_score is not None:
+            if self.board.turn:
+                reward = rel_score - self.white_advantage
+                self.white_advantage = rel_score
+            else:
+                rel_score *= -1
+                reward = rel_score - self.black_advantage
+                self.black_advantage = rel_score
+           
+        return reward
+
+    def _is_game_over(self):
         # todo implement a better reward function
-        if self.board.is_checkmate():
-            return 1
-        if self.board.is_stalemate():
-            return 0
-        return 0.5
-        
-    def score_move(self):
+       return (
+        self.board.is_checkmate()
+        or self.board.is_variant_draw()
+        or self.board.is_stalemate()
+        or self.board.is_insufficient_material()
+        or self.board.is_seventyfive_moves()
+       )
+    
+
+    def advantage_move(self):
         chess.engine.SimpleEngine.ponder(self.board)
     
     def make_radom_move(self):
@@ -83,18 +108,3 @@ class ChessEnv:
             if board.is_game_over():
                 break
         return board
-    
-
-# env = ChessEnv()
-# observation = env.reset()
-# for _ in range(10):
-#     action = env.action_space.sample()
-#     observation, reward, done, info = env.step(action)
-#     if done:
-#         break
-
-# print("Observation:", observation)
-# print("Reward:", reward)
-# print("Done:", done)
-# print("Info:", info)
-
