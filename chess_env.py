@@ -4,6 +4,7 @@ import chess
 import chess.engine
 import random
 import numpy as np
+import keras
 
 
 
@@ -22,8 +23,9 @@ class ChessEnv:
         self.observation_space = spaces.Box(low=0, high=1, shape=(8, 8, 6), dtype=np.uint8)
         # action space 
         self.num_actions = len(list(self.board.legal_moves))
+        self.model = keras.models.load_model('dqn_chess.h5')
 
-
+    
     def reset(self):
         self.board.reset()
         return self._get_observation()
@@ -40,6 +42,7 @@ class ChessEnv:
     def step(self, action):
         #convert the action inde to a chess move
         leagal_moves = list(self.board.legal_moves)
+        print(leagal_moves, len(leagal_moves))
         if 0 <= action < len(leagal_moves):
             move = leagal_moves[action]
         else:
@@ -83,7 +86,11 @@ class ChessEnv:
         or self.board.is_seventyfive_moves()
        )
     
-
+    def next_action(self, state):
+        q_values= self.model.predict(np.expand_dims(state, axis=0))
+        step = np.argmax(q_values)
+        return step
+    
     def advantage_move(self):
         chess.engine.SimpleEngine.ponder(self.board)
     
