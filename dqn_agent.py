@@ -32,6 +32,7 @@ class DQN_Agent:
         states = np.array(states)
         targets = np.array(targets)
         current_q_values = self.model.predict(states)
+        
         current_q_values[np.arange(len(current_q_values)), targets] = targets
         self.model.fit(states, targets, epochs=1, verbose=0)
 

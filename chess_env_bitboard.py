@@ -131,7 +131,7 @@ class BitBoardEnv:
         else:
             return board_value[0] - board_value[1]
     
-    def step(self, action):
+    def step(self):
         
         bitboard = self.board_to_biboards() 
         self.state = self.bitboards_to_array(bitboard)
