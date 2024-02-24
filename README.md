@@ -1,3 +1,3 @@
 ## Chess Move Prediction with Machine Learning
-______
-![Knight](knight.png)
+
+This repo is a mess. mostly experiments with chess. 
