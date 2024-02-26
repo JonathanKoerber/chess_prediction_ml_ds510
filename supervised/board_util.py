@@ -76,3 +76,44 @@ def piece_to_channel(move, bitboard):
                      'P': 6, 'N': 7, 'B': 8, 'R': 9, 'Q': 10, 'K': 11}
     
     return piece_mapping[move[-1]]
+
+def moves_from_file(file_path):
+    
+    data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            lines = file.readlines()
+    np.random.shuffle(data)
+    for line in lines:
+        board_state, move = line.split("[MOVESEOP]")
+        cb = chess.Board(board_state)
+        bb = board_to_bitboards(cb)
+        ab = bitboards_to_array(bb)
+
+        move = encode_move(move, ab)
+        data.append((ab, move))
+    return data
+
+def split_data(data, train_size=0.8):
+    # Calculate the number of samples for the training set
+    train_samples = int(len(data) * train_size)
+    
+    # Split the data into training and validation sets
+    train_data = data[:train_samples]
+    val_data = data[train_samples:]
+    
+    return train_data, val_data
+
+
+def generate_batches(data, batch_size):
+    # Shuffle the data
+    np.random.shuffle(data)
+    
+    # Calculate the number of batches
+    num_batches = len(data) // batch_size
+    
+    # Generate the batches
+    for i in range(0, len(data),  batch_size):
+        batch = data[i:i + batch_size]
+        x_batch, y_batch = zip(*batch)
+        yield np.array(x_batch), np.array(y_batch)
